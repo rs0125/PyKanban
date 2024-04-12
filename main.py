@@ -1,4 +1,5 @@
 import sys
+import pickle
 from termcolor import colored
 
 class Task:
@@ -13,6 +14,11 @@ class Task:
         setattr(self, field_name, field_value)
 
     def display(self):
+        print("Task:", self.task_name)
+        print("Assignee:", self.assignee)
+        print("Reporter:", self.reporter)
+        print("Deadline:", self.deadline)
+        # Display additional status fields
         for attr_name in dir(self):
             if not attr_name.startswith('__') and not callable(getattr(self, attr_name)):
                 print(f"{attr_name.capitalize()}: {getattr(self, attr_name)}")
@@ -67,17 +73,34 @@ def display_kanban_boards(todo, prog, done):
     prog.display("yellow")
     done.display("green")
 
+def save_data(todo, prog, done):
+    with open("kanban_data.pickle", "wb") as f:
+        pickle.dump((todo, prog, done), f)
+
+def load_data():
+    try:
+        with open("kanban_data.pickle", "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        print("No previous data found.")
+        return None, None, None
+
 def main():
-    todo = Kanban("TODO")
-    prog = Kanban("In Progress")
-    done = Kanban("Done")
+    todo, prog, done = load_data()
+    if todo is None:
+        todo = Kanban("TODO")
+    if prog is None:
+        prog = Kanban("In Progress")
+    if done is None:
+        done = Kanban("Done")
 
     while True:
         print("Select an action:")
         print("1. Add Task")
         print("2. Move Task")
         print("3. Display Kanban Board")
-        print("4. Exit")
+        print("4. Save Data")
+        print("5. Exit")
 
         choice = input("Enter your choice: ")
 
@@ -90,18 +113,18 @@ def main():
             destination_board_name = input("Enter destination board (TODO, In Progress, Done): ")
             if destination_board_name.lower() == "todo":
                 todo.move_task(task_name, todo)
-                display_kanban_boards(todo, prog, done)
             elif destination_board_name.lower() == "in progress":
                 todo.move_task(task_name, prog)
-                display_kanban_boards(todo, prog, done)
             elif destination_board_name.lower() == "done":
                 todo.move_task(task_name, done)
-                display_kanban_boards(todo, prog, done)
             else:
                 print("Invalid destination board.")
         elif choice == "3":
             display_kanban_boards(todo, prog, done)
         elif choice == "4":
+            save_data(todo, prog, done)
+            print("Data saved successfully.")
+        elif choice == "5":
             print("Exiting program.")
             sys.exit()
         else:
